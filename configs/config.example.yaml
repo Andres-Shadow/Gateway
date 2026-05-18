@@ -1,0 +1,3 @@
+port: "8080"
+sqlite_path: "gateway.db"
+debug: false
