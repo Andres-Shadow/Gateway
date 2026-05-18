@@ -12,6 +12,7 @@ import (
 	"gateway/internal/auth"
 	"gateway/internal/config"
 	"gateway/internal/database"
+	"gateway/internal/frontend"
 	"gateway/internal/handlers"
 	gatewaymiddleware "gateway/internal/middleware"
 	"gateway/internal/models"
@@ -66,6 +67,7 @@ func main() {
 	httpRouter := router.New(router.Dependencies{
 		AdminRoutes:      adminHandler,
 		AuthTokenHandler: authHandler.Token,
+		Frontend:         frontend.Handler(),
 		Proxy:            proxyHandler,
 		Logger:           logger,
 		Middlewares:      rootMiddlewares,
