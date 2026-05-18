@@ -8,15 +8,17 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 )
 
-type AdminRouteRegistrar interface {
+type RouteRegistrar interface {
 	Register(r chi.Router)
 }
 
 type Dependencies struct {
-	AdminRoutes AdminRouteRegistrar
-	Proxy       http.Handler
-	Logger      *slog.Logger
-	Middlewares []func(http.Handler) http.Handler
+	AdminRoutes      RouteRegistrar
+	AuthTokenHandler http.HandlerFunc
+	Proxy            http.Handler
+	Logger           *slog.Logger
+	Middlewares      []func(http.Handler) http.Handler
+	AdminMiddlewares []func(http.Handler) http.Handler
 }
 
 func New(deps Dependencies) http.Handler {
@@ -34,7 +36,17 @@ func New(deps Dependencies) http.Handler {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	r.Route("/admin", deps.AdminRoutes.Register)
+	r.Route("/admin", func(admin chi.Router) {
+		if deps.AuthTokenHandler != nil {
+			admin.Post("/auth/token", deps.AuthTokenHandler)
+		}
+		admin.Group(func(protected chi.Router) {
+			for _, mw := range deps.AdminMiddlewares {
+				protected.Use(mw)
+			}
+			deps.AdminRoutes.Register(protected)
+		})
+	})
 	r.NotFound(deps.Proxy.ServeHTTP)
 	r.MethodNotAllowed(deps.Proxy.ServeHTTP)
 	return r

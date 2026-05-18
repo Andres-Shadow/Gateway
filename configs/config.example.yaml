@@ -1,3 +1,33 @@
 port: "8080"
 sqlite_path: "gateway.db"
 debug: false
+admin:
+  username: "admin"
+  password: "admin"
+  jwt_secret: "change-me-in-production"
+  token_ttl: "12h"
+cors:
+  allowed_origins:
+    - "http://localhost:3000"
+  allowed_methods:
+    - "GET"
+    - "POST"
+    - "PUT"
+    - "PATCH"
+    - "DELETE"
+    - "OPTIONS"
+  allowed_headers:
+    - "Authorization"
+    - "Content-Type"
+rate_limit:
+  enabled: true
+  requests_per_minute: 120
+proxy:
+  max_retries: 2
+  retry_backoff: "100ms"
+  circuit_failure_limit: 3
+  circuit_cooldown: "30s"
+health_check:
+  enabled: true
+  interval: "30s"
+  timeout: "2s"

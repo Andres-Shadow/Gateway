@@ -94,7 +94,7 @@ func newTestApp(t *testing.T) http.Handler {
 
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	adminHandler := handlers.NewRouteHandler(routeService, logger)
-	proxyHandler := proxy.NewHandler(registry, logger)
+	proxyHandler := proxy.NewHandler(registry, nil, logger, proxy.HandlerOptions{})
 	return router.New(router.Dependencies{
 		AdminRoutes: adminHandler,
 		Proxy:       proxyHandler,

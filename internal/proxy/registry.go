@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"encoding/json"
 	"sort"
 	"strings"
 	"sync"
@@ -14,10 +15,20 @@ type RouteRegistry struct {
 }
 
 type CompiledRoute struct {
-	ID        uint
-	Path      string
-	TargetURL string
-	Methods   map[string]struct{}
+	ID                    uint
+	Path                  string
+	TargetURL             string
+	Methods               map[string]struct{}
+	HealthCheckPath       string
+	RewritePrefixFrom     string
+	RewritePrefixTo       string
+	RequestHeadersSet     map[string]string
+	RequestHeadersRemove  []string
+	ResponseHeadersSet    map[string]string
+	ResponseHeadersRemove []string
+	RequestBodyTransform  string
+	ResponseBodyTransform string
+	Healthy               bool
 }
 
 func NewRouteRegistry() *RouteRegistry {
@@ -65,11 +76,30 @@ func (r *RouteRegistry) Match(method, path string) (CompiledRoute, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	for _, route := range r.routes {
-		if route.matchesMethod(method) && route.matchesPath(path) {
+		if route.Healthy && route.matchesMethod(method) && route.matchesPath(path) {
 			return route, true
 		}
 	}
 	return CompiledRoute{}, false
+}
+
+func (r *RouteRegistry) Snapshot() []CompiledRoute {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	routes := make([]CompiledRoute, len(r.routes))
+	copy(routes, r.routes)
+	return routes
+}
+
+func (r *RouteRegistry) SetHealthy(id uint, healthy bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := range r.routes {
+		if r.routes[i].ID == id {
+			r.routes[i].Healthy = healthy
+			return
+		}
+	}
 }
 
 func (r CompiledRoute) matchesMethod(method string) bool {
@@ -85,11 +115,11 @@ func (r CompiledRoute) matchesPath(path string) bool {
 		return false
 	}
 	prefix := strings.TrimSuffix(r.Path, "*")
-	if strings.HasPrefix(path, prefix) {
-		return true
-	}
 	base := strings.TrimRight(prefix, "/")
-	return base != "" && path == base
+	if base == "" {
+		return strings.HasPrefix(path, prefix)
+	}
+	return path == base || strings.HasPrefix(path, base+"/")
 }
 
 func compileRoutes(routes []models.Route) []CompiledRoute {
@@ -111,10 +141,20 @@ func compileRoute(route models.Route) CompiledRoute {
 		}
 	}
 	return CompiledRoute{
-		ID:        route.ID,
-		Path:      route.Path,
-		TargetURL: route.TargetURL,
-		Methods:   compiledMethods,
+		ID:                    route.ID,
+		Path:                  route.Path,
+		TargetURL:             route.TargetURL,
+		Methods:               compiledMethods,
+		HealthCheckPath:       route.HealthCheckPath,
+		RewritePrefixFrom:     route.RewritePrefixFrom,
+		RewritePrefixTo:       route.RewritePrefixTo,
+		RequestHeadersSet:     decodeStringMap(route.RequestHeadersSet),
+		RequestHeadersRemove:  decodeStringSlice(route.RequestHeadersRemove),
+		ResponseHeadersSet:    decodeStringMap(route.ResponseHeadersSet),
+		ResponseHeadersRemove: decodeStringSlice(route.ResponseHeadersRemove),
+		RequestBodyTransform:  route.RequestBodyTransform,
+		ResponseBodyTransform: route.ResponseBodyTransform,
+		Healthy:               true,
 	}
 }
 
@@ -126,4 +166,26 @@ func sortRoutes(routes []CompiledRoute) {
 
 func routeSpecificity(path string) int {
 	return len(strings.TrimSuffix(path, "*"))
+}
+
+func decodeStringMap(value string) map[string]string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	var decoded map[string]string
+	if err := json.Unmarshal([]byte(value), &decoded); err != nil {
+		return nil
+	}
+	return decoded
+}
+
+func decodeStringSlice(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return nil
+	}
+	var decoded []string
+	if err := json.Unmarshal([]byte(value), &decoded); err != nil {
+		return nil
+	}
+	return decoded
 }
