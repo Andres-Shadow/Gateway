@@ -18,6 +18,21 @@ go mod tidy
 go run ./cmd/gateway
 ```
 
+Luego abre el panel web:
+
+```text
+http://localhost:8080/dashboard/
+```
+
+El frontend esta embebido en el binario Go, asi que no requiere Node, build separado ni servidor adicional.
+
+Desde el dashboard puedes:
+
+- iniciar sesion con JWT admin
+- listar, buscar, crear, editar, activar/desactivar y eliminar rutas
+- configurar health path, rewrites, headers y transforms simples
+- abrir en una nueva pestana el endpoint health registrado para cada ruta
+
 Variables disponibles:
 
 ```text

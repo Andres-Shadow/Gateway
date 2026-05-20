@@ -15,6 +15,7 @@ type RouteRegistrar interface {
 type Dependencies struct {
 	AdminRoutes      RouteRegistrar
 	AuthTokenHandler http.HandlerFunc
+	Frontend         http.Handler
 	Proxy            http.Handler
 	Logger           *slog.Logger
 	Middlewares      []func(http.Handler) http.Handler
@@ -35,6 +36,15 @@ func New(deps Dependencies) http.Handler {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
+	if deps.Frontend != nil {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/dashboard/", http.StatusFound)
+		})
+		r.Get("/dashboard", func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, "/dashboard/", http.StatusFound)
+		})
+		r.Handle("/dashboard/*", http.StripPrefix("/dashboard/", deps.Frontend))
+	}
 
 	r.Route("/admin", func(admin chi.Router) {
 		if deps.AuthTokenHandler != nil {

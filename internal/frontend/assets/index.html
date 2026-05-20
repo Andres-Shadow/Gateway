@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gateway Admin</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="topbar" aria-label="Gateway status">
+        <div>
+          <p class="eyebrow">Lightweight Gateway</p>
+          <h1>Admin routes</h1>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-button" id="refreshButton" title="Refrescar rutas" aria-label="Refrescar rutas">↻</button>
+          <button class="secondary" id="logoutButton" hidden>Cerrar sesión</button>
+        </div>
+      </section>
+
+      <section class="login-panel" id="loginPanel">
+        <div class="login-copy">
+          <h2>Acceso administrador</h2>
+          <p>Inicia sesión con las credenciales configuradas en el gateway.</p>
+        </div>
+        <form class="login-form" id="loginForm">
+          <label>
+            Usuario
+            <input autocomplete="username" id="username" name="username" required />
+          </label>
+          <label>
+            Contraseña
+            <input autocomplete="current-password" id="password" name="password" required type="password" />
+          </label>
+          <button type="submit">Ingresar</button>
+        </form>
+      </section>
+
+      <section class="dashboard" id="dashboard" hidden>
+        <aside class="route-form-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Configuración</p>
+              <h2 id="formTitle">Nueva ruta</h2>
+            </div>
+            <button class="icon-button" id="resetFormButton" title="Limpiar formulario" aria-label="Limpiar formulario">＋</button>
+          </div>
+
+          <form id="routeForm" class="route-form">
+            <input id="routeId" type="hidden" />
+
+            <label>
+              Path
+              <input id="path" placeholder="/users/*" required />
+            </label>
+
+            <label>
+              Target URL
+              <input id="targetUrl" placeholder="http://localhost:8081" required type="url" />
+            </label>
+
+            <label>
+              Métodos
+              <input id="methods" placeholder="GET,POST" required />
+            </label>
+
+            <label class="switch-row">
+              <input id="isActive" type="checkbox" checked />
+              <span>Ruta activa</span>
+            </label>
+
+            <div class="form-grid">
+              <label>
+                Health path
+                <input id="healthCheckPath" placeholder="/healthz" />
+              </label>
+              <label>
+                Request transform
+                <select id="requestBodyTransform">
+                  <option value="">Sin cambio</option>
+                  <option value="uppercase">Uppercase</option>
+                  <option value="lowercase">Lowercase</option>
+                </select>
+              </label>
+              <label>
+                Rewrite desde
+                <input id="rewritePrefixFrom" placeholder="/api/v1/users" />
+              </label>
+              <label>
+                Rewrite hacia
+                <input id="rewritePrefixTo" placeholder="/users" />
+              </label>
+            </div>
+
+            <details>
+              <summary>Headers y response transform</summary>
+              <label>
+                Request headers set
+                <textarea id="requestHeadersSet" spellcheck="false" placeholder='{"X-Gateway":"lightweight"}'></textarea>
+              </label>
+              <label>
+                Request headers remove
+                <textarea id="requestHeadersRemove" spellcheck="false" placeholder='["X-Debug"]'></textarea>
+              </label>
+              <label>
+                Response headers set
+                <textarea id="responseHeadersSet" spellcheck="false" placeholder='{"X-Proxied-By":"gateway"}'></textarea>
+              </label>
+              <label>
+                Response headers remove
+                <textarea id="responseHeadersRemove" spellcheck="false" placeholder='["Server"]'></textarea>
+              </label>
+              <label>
+                Response transform
+                <select id="responseBodyTransform">
+                  <option value="">Sin cambio</option>
+                  <option value="uppercase">Uppercase</option>
+                  <option value="lowercase">Lowercase</option>
+                </select>
+              </label>
+            </details>
+
+            <button type="submit" id="saveRouteButton">Crear ruta</button>
+          </form>
+        </aside>
+
+        <section class="routes-panel">
+          <div class="panel-heading routes-heading">
+            <div>
+              <p class="eyebrow">Registry</p>
+              <h2>Rutas actuales</h2>
+            </div>
+            <label class="search-box">
+              <span>Buscar</span>
+              <input id="routeSearch" placeholder="/users, GET, localhost" />
+            </label>
+          </div>
+
+          <div class="empty-state" id="emptyState" hidden>
+            <h3>No hay rutas todavía</h3>
+            <p>Crea la primera ruta para empezar a proxyear tráfico.</p>
+          </div>
+
+          <div class="routes-list" id="routesList"></div>
+        </section>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </main>
+
+    <script src="./app.js" defer></script>
+  </body>
+</html>
